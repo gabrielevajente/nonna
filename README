@@ -1,0 +1,12 @@
+Non-stationary Noise Analysis (NonNA) - Gabriele Vajente - version 2015-06-09
+
+Compute the band-limited RMS of a signal in a given band, and try to make the best
+possible prediction of its slow time variation using a set of auxiliary channels.
+The script nonna.py is an example of how to use the NonNA functions. It produces 
+two output plots:
+  1) time series of the BLRMS and best fit obtained with the auxiliary channels
+  2) ranking of the channels, in terms of how much they contribute to the reduction of
+     the error in the prediction
+
+Most of the configuration parameters are in lines 20-53.
+
