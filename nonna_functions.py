@@ -88,7 +88,7 @@ def find_LIGO_data(observatory, gpsb, gpse):
     return o.splitlines()
 
 # read data directly from frame files on disk
-def nonna_get_data_from_disk(channel, gps_start, duration, band_freqs, outfs):
+def nonna_get_data_from_disk(channel, gps_start, duration, outfs):
 	"""
 	This function reads data directly from disk, using gw_data_find to locate the gwf
 	files.
@@ -112,7 +112,7 @@ def nonna_get_data_from_disk(channel, gps_start, duration, band_freqs, outfs):
 		# get all the data we can from this file
 		gps0 = max(gps_file, int(gps_start))
 		gps1 = min(gps_file+gps_span, int(gps_start+duration))
-		buffer = frgetvect1d(f, channel, gps0, gps1-gps0, 0)
+		buffer = frgetvect1d(f[16:], channel, gps0, gps1-gps0, 0)
 		data = data + list(buffer)
 	# return the whole data
 	return data
