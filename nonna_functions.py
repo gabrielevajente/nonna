@@ -4,7 +4,7 @@
 import nds2
 import scipy
 import scipy.signal
-import pylab
+#import pylab
 import numpy
 from pylal.Fr import frgetvect1d
 import subprocess
