@@ -6,6 +6,8 @@ import scipy
 import scipy.signal
 import pylab
 import numpy
+from pylal.Fr import frgetvect1d
+import subprocess
 
 # Read data, compute the BLRMS and precondition the auxiliary channels ###################
 def nonna_get_data(target_channel, aux_channels, gps_start, duration, band_freqs, outfs, 
@@ -77,6 +79,44 @@ def nonna_get_data(target_channel, aux_channels, gps_start, duration, band_freqs
 	
 	# RETURN RESULTS
 	return t, blrms, aux
+
+# wrapper around the LIGO function to find where data is, returns a list of files
+def find_LIGO_data(observatory, gpsb, gpse):
+    o = subprocess.Popen(["/usr/bin/gw_data_find", "-o", observatory[0],
+                    		"-t", observatory[0] + "1_R", "-s", str(gpsb), "-e", str(gpse), "-u", "file"],
+                        	stdout=subprocess.PIPE).communicate()[0]        
+    return o.splitlines()
+
+# read data directly from frame files on disk
+def nonna_get_data_from_disk(channel, gps_start, duration, band_freqs, outfs):
+	"""
+	This function reads data directly from disk, using gw_data_find to locate the gwf
+	files.
+
+	Input arguments:
+	channel = name of the signal to load
+	gps_start      = start reading data at this time
+	duration       = number of seconds of data to read
+	outfs          = output sampling frequency for BLRMS and the other channels
+	"""
+
+	# get the list of files
+	files = find_LIGO_data('H1', int(gps_start), int(gps_start+duration))
+	# loop over all files
+	data = [];
+	for f in files:
+		# the file name will tell use what times are available
+		t = f.split('.')[-2].split('-')[-2:]
+		gps_file = int(t[0])
+		gps_span = int(t[1])
+		# get all the data we can from this file
+		gps0 = max(gps_file, int(gps_start))
+		gps1 = min(gps_file+gps_span, int(gps_start+duration))
+		buffer = frgetvect1d(f, channel, gps0, gps1-gps0, 0)
+		data = data + list(buffer)
+	# return the whole data
+	return data
+	
 
 # Select data based on outlier removal ###################################################
 def nonna_select_data(data, outlier_threshold, level='high'):
