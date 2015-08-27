@@ -103,7 +103,7 @@ def nonna_get_data_from_disk(channel, gps_start, duration, outfs):
 	# get the list of files
 	files = find_LIGO_data('H1', int(gps_start), int(gps_start+duration))
 	# loop over all files
-	data = [];
+	data = numpy.array([]);
 	for f in files:
 		# the file name will tell use what times are available
 		t = f.split('.')[-2].split('-')[-2:]
@@ -113,7 +113,7 @@ def nonna_get_data_from_disk(channel, gps_start, duration, outfs):
 		gps0 = max(gps_file, int(gps_start))
 		gps1 = min(gps_file+gps_span, int(gps_start+duration))
 		buffer = frgetvect1d(f[16:], channel, gps0, gps1-gps0, 0)
-		data = data + list(buffer)
+		data = numpy.concatenate([data, numpy.array(buffer[0])])
 	# return the whole data
 	return data
 	
