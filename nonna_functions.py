@@ -119,7 +119,7 @@ def nonna_get_data_from_disk(channel, gps_start, duration, outfs=-1):
 		return data
 	else:
 		# downsample
-		return decimate(data, (len(data)/duration) / outfs)
+		return scipy.signal.decimate(data, (len(data)/duration) / outfs)
 
 # Select data based on outlier removal ###################################################
 def nonna_select_data(data, outlier_threshold, level='high'):
