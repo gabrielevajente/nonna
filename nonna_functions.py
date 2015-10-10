@@ -88,7 +88,7 @@ def find_LIGO_data(observatory, gpsb, gpse):
     return o.splitlines()
 
 # read data directly from frame files on disk
-def nonna_get_data_from_disk(channel, gps_start, duration, outfs=-1):
+def nonna_get_data_from_disk(channel, gps_start, duration, outfs=-1, verbose=False):
 	"""
 	This function reads data directly from disk, using gw_data_find to locate the gwf
 	files.
@@ -103,8 +103,9 @@ def nonna_get_data_from_disk(channel, gps_start, duration, outfs=-1):
 	# get the list of files
 	files = find_LIGO_data('H1', int(gps_start), int(gps_start+duration))
 	# loop over all files
-	data = numpy.array([]);
-	for f in files:
+	for i,f in enumerate(files):
+		if verbose:
+			print 'Reading data from file %s (%d/%d)' % (f, i, len(files))
 		# the file name will tell use what times are available
 		t = f.split('.')[-2].split('-')[-2:]
 		gps_file = int(t[0])
@@ -113,16 +114,58 @@ def nonna_get_data_from_disk(channel, gps_start, duration, outfs=-1):
 		gps0 = max(gps_file, int(gps_start))
 		gps1 = min(gps_file+gps_span, int(gps_start+duration))
 		buffer = frgetvect1d(f[16:], channel, gps0, gps1-gps0, 0)
-		data = numpy.concatenate([data, numpy.array(buffer[0])])
+		if i == 0:
+			# at the first read, allocate the vector
+			fs = int(1/buffer[3])
+			data = numpy.zeros(fs*duration)
+		data[(gps0-gps_start)*fs:(gps1-gps_start)*fs] = numpy.array(buffer[0])
 	if outfs == -1:
 		# return the whole data
 		return data
 	else:
 		# downsample
+		if verbose:
+			print 'Downsampling'
 		infs = (len(data)/duration)
 		b,a = scipy.signal.butter(4, outfs/(infs/2.), btype='lowpass')
-		data = scipy.signal.filtfilt(b, a, data)
+		data = scipy.signal.lfilter(b, a, data)
 		return data[::infs/outfs]
+
+# compute BLRMS of a signal
+def nonna_blrms(signal, f1, f2, infs, outfs, remove=10):
+	"""
+	Compute the band-limited RMS of the input signal.
+
+	Input arguments:
+	signal = the input signal
+	f1,f2 = corner frequencies of the band
+	infs = sampling frequency of signal
+	outfs = desired sampling frequency of the output BLRMS
+	remove = number of seconds of data to throw away at beginning
+	"""
+	# check the ratio of BLRMS corner frequency and sampling frequency
+	# if too large we have to decimate the signal first
+	if infs/f1 > 30:
+		print 'Decimating signal'
+		decfs = infs/8
+                b,a = scipy.signal.butter(4, decfs/(infs/2.), btype='lowpass')
+                x = scipy.signal.lfilter(b, a, signal)
+                signal = x[::infs/decfs]
+		infs = decfs
+	
+	# define band-pass filter
+	b,a = scipy.signal.butter(6, scipy.array([f1, f2])/(infs/2.), btype='bandpass')
+	# band pass
+	signal = scipy.signal.filtfilt(b, a, signal)
+	# square
+	signal = signal**2
+	# low pass and decimate
+	b,a = scipy.signal.butter(4, outfs/(infs/2.), btype='lowpass')
+        signal = scipy.signal.filtfilt(b, a, signal)
+        # decimate
+        signal = signal[::infs/outfs]
+	signal = signal[outfs*remove:]
+	return signal
 
 # Select data based on outlier removal ###################################################
 def nonna_select_data(data, outlier_threshold, level='high'):
@@ -333,4 +376,17 @@ def nonna_lsq_signal_ranking(target, aux, idx=(), names=(), order=2):
 	
 	# return results
 	return p0, X, cnames, id, de
+
+def nonna_readsegmentfile(file):
+	f = open(file, 'r')
+	L = f.readlines()
+	f.close()
+
+	gps1 = []
+	gps2 = []
+	for line in L:
+		x = line.split()
+		gps1.append(int(x[1]))
+		gps2.append(int(x[2]))
+	return gps1, gps2
 
