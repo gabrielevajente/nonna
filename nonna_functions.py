@@ -102,7 +102,8 @@ def nonna_get_data_from_disk(channel, gps_start, duration, outfs=-1, verbose=Fal
 	"""
 
 	# get the list of files
-	files = find_LIGO_data('H1', int(gps_start), int(gps_start+duration))
+	ifo = channel[0:2]
+	files = find_LIGO_data(ifo, int(gps_start), int(gps_start+duration))
 	# loop over all files
 	for i,f in enumerate(files):
 		if verbose:

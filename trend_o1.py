@@ -2,12 +2,12 @@ from nonna_functions import *
 import numpy
 from scipy.signal import *
 
-gps1,gps2 = nonna_readsegmentfile('segments_h1.txt')
+gps1,gps2 = nonna_readsegmentfile('segments_l1.txt')
 
 for i in range(len(gps1)):
 	print 'Segment %d: %d - %d (%d seconds)' % (i, gps1[i], gps2[i], gps2[i] - gps1[i])
 	print 'Read data...'
-	d = nonna_get_data_from_disk('H1:CAL-DELTAL_EXTERNAL_DQ', gps1[i], gps2[i] - gps1[i], outfs=1024, verbose=False)
+	d = nonna_get_data_from_disk('L1:CAL-DELTAL_EXTERNAL_DQ', gps1[i], gps2[i] - gps1[i], outfs=1024, verbose=False)
 	
 	# calibrate removing whitening
 	N,D = zpk2tf(-2*numpy.pi*numpy.array([100, 100, 100, 100, 100]), -2*numpy.pi*numpy.array([1, 1, 1, 1, 1]), 1e-10)	
