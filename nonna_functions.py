@@ -8,6 +8,7 @@ import scipy.signal
 import numpy
 from pylal.Fr import frgetvect1d
 import subprocess
+from matplotlib.mlab import psd
 
 # Read data, compute the BLRMS and precondition the auxiliary channels ###################
 def nonna_get_data(target_channel, aux_channels, gps_start, duration, band_freqs, outfs, 
@@ -166,6 +167,44 @@ def nonna_blrms(signal, f1, f2, infs, outfs, remove=10):
         signal = signal[::infs/outfs]
 	signal = signal[outfs*remove:]
 	return signal
+
+# compute BLRMS of a signal using FFT
+def nonna_blrms_fft(signal, bands, infs, Tout, Tfft):
+        """
+        Compute the band-limited RMS of the input signal using FFT.
+
+        Input arguments:
+        signal = the input signal
+        bands = corner frequencies of the bands, can be multiple. Ex. [[10, 20]] or [[10,20], [30,40]]
+        infs = sampling frequency of signal
+        Tout = time for each averaged PSD (inverse of output sampling)
+	       the function returns a sample every Tout
+       	Tfft = duration (in seconds) of each FFT
+        """
+
+	# define number of samples for each FFT and for each time slice
+	Nfft = infs * Tfft
+	Npt = infs * Tout
+	Nsamples = int(len(signal)/Npt)
+	# determine the satrting point of each data segment
+	idx = numpy.arange(0,Nsamples) * Npt
+	# initialize time vector and BLRMS vector
+	t = numpy.arange(0,Nsamples) * Tout
+	Nbands = len(bands)
+	b = numpy.zeros((len(t), Nbands))
+
+	# loop over each segment of data
+	for i,j in enumerate(idx):
+		# compute PSD
+		sx, fr = psd(signal[j:j+Npt], Fs=infs, noverlap=Nfft/2, NFFT=Nfft)
+		# loop over all bands
+		for k in range(Nbands):
+			# sum all bins in the correct frequency range
+			b[i, k] = numpy.sum(sx[(fr>bands[k][0]) & (fr<bands[k][1])])
+	
+	# done
+	return t, b
+
 
 # Select data based on outlier removal ###################################################
 def nonna_select_data(data, outlier_threshold, level='high'):
