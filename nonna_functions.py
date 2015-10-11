@@ -200,8 +200,8 @@ def nonna_blrms_fft(signal, bands, infs, Tout, Tfft):
 		sx, fr = psd(signal[j:j+Npt], Fs=infs, noverlap=Nfft/2, NFFT=Nfft)
 		# loop over all bands
 		for k in range(Nbands):
-			# sum all bins in the correct frequency range
-			b[i, k] = numpy.sum(sx[(fr>bands[k][0]) & (fr<bands[k][1])])
+			# sum all bins in the correct frequency range, and multiply by frequency bin width
+			b[i, k] = fr[1]*numpy.sum(sx[(fr>bands[k][0]) & (fr<bands[k][1])])
 	
 	# done
 	return t, b
