@@ -10,6 +10,47 @@ from pylal.Fr import frgetvect1d
 import subprocess
 from matplotlib.mlab import psd
 
+# Custom decimation function, copied a long time ago from somewhere on the web
+def decimate(x, q, n=None, ftype='iir', axis=-1):
+    """downsample the signal x by an integer factor q, using an order n filter
+   
+    By default, an order 8 Chebyshev type I filter is used or a 30 point FIR
+    filter with hamming window if ftype is 'fir'.
+
+    (port to python of the GNU Octave function decimate.)
+
+    Inputs:
+        x -- the signal to be downsampled (N-dimensional array)
+        q -- the downsampling factor
+        n -- order of the filter (1 less than the length of the filter for a
+             'fir' filter)
+        ftype -- type of the filter; can be 'iir' or 'fir'
+        axis -- the axis along which the filter should be applied
+   
+    Outputs:
+        y -- the downsampled signal
+
+    """
+
+    if type(q) != type(1):
+        raise Error, "q should be an integer"
+
+    if n is None:
+        if ftype == 'fir':
+            n = 30
+        else:
+            n = 10
+    if ftype == 'fir':
+        b = firwin(n+1, 1./q, window='hamming')
+        y = lfilter(b, 1., x, axis=axis)
+    else:
+        (b, a) = scipy.signal.cheby1(n, 0.05, 0.8/q)
+
+        y = scipy.signal.lfilter(b, a, x, axis=axis)
+
+    return y.swapaxes(0,axis)[::q].swapaxes(0,axis)
+
+
 # Read data, compute the BLRMS and precondition the auxiliary channels ###################
 def nonna_get_data(target_channel, aux_channels, gps_start, duration, band_freqs, outfs, 
 				   fs = 4096, nds_server = 'nds.ligo-wa.caltech.edu', nds_port = 31200):
@@ -69,9 +110,10 @@ def nonna_get_data(target_channel, aux_channels, gps_start, duration, band_freqs
 	for i in range(1,len(buffers)):
 		# low pass and decimate
 		fs_aux = int(buffers[i].length/duration)
-		b,a = scipy.signal.butter(4, outfs/(fs_aux/2.), btype='lowpass')
-		x = scipy.signal.filtfilt(b, a, buffers[i].data)
-		aux[:,i-1] = x[::fs_aux/outfs]
+		aux[:,i-1] = decimate(buffers[i].data, fs_aux/out_fs)
+		#b,a = scipy.signal.butter(4, outfs/(fs_aux/2.), btype='lowpass')
+		#x = scipy.signal.filtfilt(b, a, buffers[i].data)
+		#aux[:,i-1] = x[::fs_aux/outfs]
 
 	# get rid of initial and final transients
 	aux = aux[2*outfs:-2*outfs]
@@ -129,9 +171,9 @@ def nonna_get_data_from_disk(channel, gps_start, duration, outfs=-1, verbose=Fal
 		if verbose:
 			print 'Downsampling'
 		infs = (len(data)/duration)
-		b,a = scipy.signal.butter(4, outfs/(infs/2.), btype='lowpass')
-		data = scipy.signal.lfilter(b, a, data)
-		return data[::infs/outfs]
+		#b,a = scipy.signal.butter(4, outfs/(infs/2.), btype='lowpass')
+		#data = scipy.signal.lfilter(b, a, data)
+		return decimate(data, infs/outfs)
 
 # compute BLRMS of a signal
 def nonna_blrms(signal, f1, f2, infs, outfs, remove=10):
