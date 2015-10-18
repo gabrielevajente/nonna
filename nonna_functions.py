@@ -6,7 +6,10 @@ import scipy
 import scipy.signal
 #import pylab
 import numpy
-from pylal.Fr import frgetvect1d
+try:
+	from pylal.Fr import frgetvect1d
+except:
+	pass
 import subprocess
 from matplotlib.mlab import psd
 
@@ -345,7 +348,7 @@ def nonna_lsq(target, aux, idx=(), names=(), order=2):
 		
 	if len(idx) == 0:
 		# no index means use all
-		idx = array(target, dtype=bool)
+		idx = numpy.array(target, dtype=bool)
 		idx[:] = True
 	
 	##### PREPARE CHANNELS FOR LSQ PREDICTION 
@@ -402,7 +405,15 @@ def nonna_lsq_signal_ranking(target, aux, idx=(), names=(), order=2):
 	
 	Note that the mean will be removed from the auxiliary signals. 
 	"""
-	
+	if len(names) == 0:
+		# since the user didn't provide signal names, let's build some
+		names = map(lambda x: 'S'+str(x), scipy.arange(naux)+1)
+		
+	if len(idx) == 0:
+		# no index means use all
+		idx = numpy.array(target, dtype=bool)
+		idx[:] = True
+		
 	# first estimation with all channels
 	p0, X, cnames = nonna_lsq(target, aux, idx=idx, names=names, order=order)
 
