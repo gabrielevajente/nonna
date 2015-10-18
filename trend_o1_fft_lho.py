@@ -5,7 +5,7 @@ from scipy.signal import *
 gps1,gps2 = nonna_readsegmentfile('segments_h1.txt')
 
 # frequency bands for BLRMS
-bands = [[10, 20], [15, 25], [20, 30], [30, 40], [43,58], [70, 100], [140, 160], [200, 220], [240, 260], [305, 370], \
+bands = [[10, 20], [20, 30], [30, 40], [43,58], [70, 100], [140, 160], [200, 220], [240, 260], [305, 370], \
 	 [340, 360], [400, 450], [700, 900]]
 # output period
 Tout = 60

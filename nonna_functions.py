@@ -130,6 +130,15 @@ def find_LIGO_data(observatory, gpsb, gpse):
                         	stdout=subprocess.PIPE).communicate()[0]        
     return o.splitlines()
 
+# wrapper around the LIGO function to find where data is, returns a list of files
+def find_LIGO_minute_trend_data(observatory, gpsb, gpse):
+    o = subprocess.Popen(["/usr/bin/gw_data_find", "-o", observatory[0],
+                                "-t", observatory[0] + "1_M", "-s", str(gpsb), "-e", str(gpse), "-u", "file"],
+                                stdout=subprocess.PIPE).communicate()[0]
+    return o.splitlines()
+
+
+
 # read data directly from frame files on disk
 def nonna_get_data_from_disk(channel, gps_start, duration, outfs=-1, verbose=False):
 	"""
